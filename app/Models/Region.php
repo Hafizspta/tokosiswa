@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Region extends Model
 {
     public $timestamps = false;
+    protected $guarded = ['id'];
 
     public function parent() : BelongsTo
     {

@@ -9,22 +9,22 @@ use Spatie\LaravelData\DataCollection;
 
 class RegionQueryService{
 
-    public function searchRegionByName(string $keyword, int $limit = 5): DataCollection
+    public function searchRegionByName(string $keyword, int $limit = 10): DataCollection
     {
-        $regions = Region::where('type', 'village')
+        $regions = Region::select('villages.*')
+            ->from('regions as villages')
+            ->leftJoin('regions as districts', 'villages.parent_code', '=', 'districts.code')
+            ->leftJoin('regions as regencies', 'districts.parent_code', '=', 'regencies.code')
+            ->leftJoin('regions as provinces', 'regencies.parent_code', '=', 'provinces.code')
+            ->where('villages.type', 'village')
             ->where(function ($query) use ($keyword) {
-                $query->where('name', 'LIKE', "%$keyword%")
-                    ->orWhere('postal_code', 'LIKE', "%$keyword%")
-                    ->orWhereHas('parent', function ($query) use ($keyword) {
-                        $query->where('name', 'LIKE', "%$keyword%");
-                    })
-                    ->orWhereHas('parent.parent', function ($query) use ($keyword) {
-                        $query->where('name', 'LIKE', "%$keyword%");
-                    })
-                    ->orWhereHas('parent.parent.parent', function ($query) use ($keyword) {
-                        $query->where('name', 'LIKE', "%$keyword%");
-                    });
-            })->with(['parent.parent.parent'])
+                $query->where('villages.name', 'LIKE', "%{$keyword}%")
+                      ->orWhere('villages.postal_code', 'LIKE', "%{$keyword}%")
+                      ->orWhere('districts.name', 'LIKE', "%{$keyword}%")
+                      ->orWhere('regencies.name', 'LIKE', "%{$keyword}%")
+                      ->orWhere('provinces.name', 'LIKE', "%{$keyword}%");
+            })
+            ->with(['parent.parent.parent'])
             ->limit($limit)
             ->get();
 
