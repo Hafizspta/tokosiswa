@@ -1,0 +1,67 @@
+services:
+    mysql-master-1:
+        image: mysql:8.0
+        container_name: mysql_master_1
+        environment:
+            MYSQL_ROOT_PASSWORD: rootpassword
+            MYSQL_DATABASE: sistem_pemasaran
+            MYSQL_USER: laravel_user
+            MYSQL_PASSWORD: laravelpassword
+        ports:
+            - "33061:3306"
+        volumes:
+            - ./docker/data/master1:/var/lib/mysql
+        command: >
+            --server-id=1
+            --log-bin=mysql-bin
+            --binlog-format=ROW
+            --binlog-do-db=sistem_pemasaran
+            --gtid-mode=ON
+            --enforce-gtid-consistency=ON
+            --auto-increment-increment=2
+            --auto-increment-offset=1
+        networks:
+            - db_cluster_network
+
+    mysql-master-2:
+        image: mysql:8.0
+        container_name: mysql_master_2
+        environment:
+            MYSQL_ROOT_PASSWORD: rootpassword
+            MYSQL_DATABASE: sistem_pemasaran
+            MYSQL_USER: laravel_user
+            MYSQL_PASSWORD: laravelpassword
+        ports:
+            - "33062:3306"
+        volumes:
+            - ./docker/data/master2:/var/lib/mysql
+        command: >
+            --server-id=2
+            --log-bin=mysql-bin
+            --binlog-format=ROW
+            --binlog-do-db=sistem_pemasaran
+            --gtid-mode=ON
+            --enforce-gtid-consistency=ON
+            --auto-increment-increment=2
+            --auto-increment-offset=2
+        networks:
+            - db_cluster_network
+
+    # INI ADALAH TAMBAHAN BARUNYA
+    haproxy:
+        image: haproxy:2.8
+        container_name: db_haproxy
+        ports:
+            - "33063:3306"
+            - "8404:8404"
+        volumes:
+            - ./docker/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+        depends_on:
+            - mysql-master-1
+            - mysql-master-2
+        networks:
+            - db_cluster_network
+
+networks:
+    db_cluster_network:
+        driver: bridge
